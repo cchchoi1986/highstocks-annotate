@@ -1,0 +1,35 @@
+#chart {
+  height: 500px;
+}
+
+/*.input {
+  border: 2px solid black;
+}*/
+
+.cc-nm {
+  margin: 0;
+  padding: 0;
+}
+
+.labelcol {
+  /*border: 2px solid black;*/
+}
+
+.cclabel {
+  padding: 5px;
+}
+.input-bar {
+  float: left;
+  padding: 2px;
+  margin: 2px;
+  width:100%;
+}
+
+.ccbutton {
+  border: 2px solid black;
+  border-radius: 15px;
+  font-size: 40px;
+  padding: 20px;
+  font-weight: bold;
+}
+
