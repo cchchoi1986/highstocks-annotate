@@ -4,7 +4,7 @@ var notes = [];
 $(document).ready(function(){
   // data is an array
   $('.edit-button').hide();
-
+  
   {  //ajax get data request
     var grabData = function(data){
       $.ajax({
@@ -24,7 +24,7 @@ $(document).ready(function(){
           // collecting each data point
             var dataPoint = {};
             dataPoint.y = this[1];
-            dataPoint.x = new Date(this[0]);
+            dataPoint.x = Date.parse(this[0]);
             // add each datapoint to data array
             // console.log(dataPoint);
             data.push(dataPoint);
@@ -59,12 +59,15 @@ $(document).ready(function(){
           dataType: 'json',
           success: function(response){
               console.log(response);
+              grabAnnot();
           }
       });
+
     });
   }
   { //Get Annotations
     var grabAnnot = function(){
+      notes = [];
       $.ajax({
           type: 'GET',
           url: 'http://ga-wdi-api.meteor.com/api/posts/search/cchchoi1986',
@@ -77,7 +80,7 @@ $(document).ready(function(){
                 obj.id = response[i]._id;
                 obj.title = response[i].title;
                 obj.text = response[i].text;
-                obj.x = new Date(response[i].x);
+                obj.x = Date.parse(response[i].x);
                 // obj.dateCreated = new Date(response[i].dateCreated);
                 // console.log(obj);
                 notes.push(obj);
@@ -85,15 +88,17 @@ $(document).ready(function(){
               }
               notes = notes.reverse();
               // console.log(notes);
+              $('.anno-insert').html('');
               for (i in notes){
                 $(document).ready(function(){
                   // console.log(notes[i].x);
                   $('.anno-insert').append(
-                    '<div class="col-xs-12 anno-note" data-id="'+notes[i].id+'"><div class="col-xs-2 anno-date">'+Date(notes[i].x)+'</div><div class="col-xs-2 anno-title">'+notes[i].title+'</div><div class="col-xs-4 anno-content">'+notes[i].text+'</div><button class="col-xs-offset-1 col-xs-1 anno-edit">Edit</button><button class="col-xs-offset-1 col-xs-1 anno-delete">Delete</button></div>'
+                    '<div class="col-xs-12 anno-note" data-id="'+notes[i].id+'"><div class="col-xs-2 anno-date">'+moment(notes[i].x).format('YYYY-MM-DD')+'</div><div class="col-xs-2 anno-title">'+notes[i].title+'</div><div class="col-xs-4 anno-content">'+notes[i].text+'</div><button class="col-xs-offset-1 col-xs-1 anno-edit">Edit</button><button class="col-xs-offset-1 col-xs-1 anno-delete">Delete</button></div>'
                   );
                 });
               }
-              initializeHighChart();
+              initializeHighChart(notes);
+              
           }
       });
     };
@@ -104,37 +109,57 @@ $(document).ready(function(){
     // };
   }
   {
-    var modifyDone = function(){
-      $(document).on('click','.edit-button',function(){
-        $.ajax({
-            type: 'PUT',
-            url: 'http://ga-wdi-api.meteor.com/api/posts/'+$(this).parent().data('id'),
-            data: {
-                user: 'cchchoi1986',
-                title: $('#title').val(),
-                text: $('#content').val(),
-                date: $('#date').val(),
-                dateModified: new Date()
-            },
-            dataType: 'json',
-            success: function(response){
-                console.log(response);
-            }
-        });
-      });
-    }
+    // var modifyDone = function(){
+    //   $(document).on('click','.edit-button',function(){
+    //     console.log($(this).parent().data;
+        // $.ajax({
+        //     type: 'PUT',
+        //     url: 'http://ga-wdi-api.meteor.com/api/posts/'+$(this).parent().data('id'),
+        //     data: {
+        //         user: 'cchchoi1986',
+        //         title: $('#title').val(),
+        //         text: $('#content').val(),
+        //         date: $('#date').val(),
+        //         dateModified: new Date()
+        //     },
+        //     dataType: 'json',
+        //     success: function(response){
+        //         console.log(response);
+        //     }
+        // });
+      // });
+    // }
   }
   { //run grabData function
     grabData(data);
-    $(document).on('click','.anno-edit',function(){
+    $(document).on('click', '.anno-edit', function(){
         // console.log($(this).parent().data('id'));
         // console.log($(this).siblings('.anno-title').text());
         $('.post-button').hide();
         $('.edit-button').show();
         $('#title').val($(this).siblings('.anno-title').text());
+        $('#title').attr('data-id', $(this).parent().data('id'));
         $('#content').val($(this).siblings('.anno-content').text());
         $('#date').val($(this).siblings('.anno-date').text());
-        modifyDone();
+        $(document).on('click','.edit-button',function(){
+          $.ajax({
+            type: 'PUT',
+            url: 'http://ga-wdi-api.meteor.com/api/posts/'+$('#title').data('id'),
+            data: {
+                user: 'cchchoi1986',
+                title: $('#title').val(),
+                text: $('#content').val(),
+                x: $('#date').val(),
+                dateModified: new Date()
+            },
+            dataType: 'json',
+            success: function(response){
+                console.log(response);
+                grabAnnot();
+            }
+          });
+
+        });
     });
     $(document).on('click', '.anno-delete',function(){
       // console.log($(this).parent().data('id'));
@@ -143,6 +168,7 @@ $(document).ready(function(){
           url: 'http://ga-wdi-api.meteor.com/api/posts/'+$(this).parent().data('id'),
           success: function(response){
               console.log('deleted');
+              grabAnnot();
           }
       });
       // location.reload();
@@ -150,8 +176,8 @@ $(document).ready(function(){
     // grabAnnot();
   }
   { //Chart settings
-    function initializeHighChart(){
-      $('#chart').highcharts({
+    function initializeHighChart(annotations){
+      $('#chart').highcharts('StockChart',{
         //key: value
         title: {
           text: 'China: Internet Users from quandl'
@@ -195,14 +221,11 @@ $(document).ready(function(){
             name: 'Internet Users per 100 people',
             data: data,
             id: 'dataseries',
-            tooltip: {
-                valueDecimals: 4
-            }
           },
           {
             type: 'flags',
             name: 'Flags on series',
-            data: notes,
+            data: annotations,
             onSeries: 'dataseries',
             shape: 'squarepin'
           }
