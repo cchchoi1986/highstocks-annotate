@@ -3,7 +3,7 @@ var notes = [];
 
 $(document).ready(function(){
   // data is an array
-  
+  $('.edit-button').hide();
 
   {  //ajax get data request
     var grabData = function(data){
@@ -35,8 +35,8 @@ $(document).ready(function(){
           
           // // print out data;
           // console.log(data);
-          initializeHighChart();
-          
+          // initializeHighChart();
+          grabAnnot();
         },
         error: function(){
           alert("couldn't hit me bro!");
@@ -45,7 +45,7 @@ $(document).ready(function(){
     }
   }
   { //Post Annotations
-    $(document).on('click','.ccbutton',function(){
+    $(document).on('click','.post-button',function(){
       $.ajax({
           type: 'POST',
           url: 'http://ga-wdi-api.meteor.com/api/posts/',
@@ -74,7 +74,7 @@ $(document).ready(function(){
               var i = 0;
               while (i < response.length){
                 var obj = {};
-                // obj.id = response[i]._id;
+                obj.id = response[i]._id;
                 obj.title = response[i].title;
                 obj.text = response[i].text;
                 obj.x = new Date(response[i].x);
@@ -84,14 +84,70 @@ $(document).ready(function(){
                 i++;
               }
               notes = notes.reverse();
-              console.log(notes);
+              // console.log(notes);
+              for (i in notes){
+                $(document).ready(function(){
+                  // console.log(notes[i].x);
+                  $('.anno-insert').append(
+                    '<div class="col-xs-12 anno-note" data-id="'+notes[i].id+'"><div class="col-xs-2 anno-date">'+Date(notes[i].x)+'</div><div class="col-xs-2 anno-title">'+notes[i].title+'</div><div class="col-xs-4 anno-content">'+notes[i].text+'</div><button class="col-xs-offset-1 col-xs-1 anno-edit">Edit</button><button class="col-xs-offset-1 col-xs-1 anno-delete">Delete</button></div>'
+                  );
+                });
+              }
+              initializeHighChart();
           }
       });
     };
   }
+  {
+    // var modifyButton = function(){
+    //   console.log(this);
+    // };
+  }
+  {
+    var modifyDone = function(){
+      $(document).on('click','.edit-button',function(){
+        $.ajax({
+            type: 'PUT',
+            url: 'http://ga-wdi-api.meteor.com/api/posts/'+$(this).parent().data('id'),
+            data: {
+                user: 'cchchoi1986',
+                title: $('#title').val(),
+                text: $('#content').val(),
+                date: $('#date').val(),
+                dateModified: new Date()
+            },
+            dataType: 'json',
+            success: function(response){
+                console.log(response);
+            }
+        });
+      });
+    }
+  }
   { //run grabData function
     grabData(data);
-    grabAnnot();
+    $(document).on('click','.anno-edit',function(){
+        // console.log($(this).parent().data('id'));
+        // console.log($(this).siblings('.anno-title').text());
+        $('.post-button').hide();
+        $('.edit-button').show();
+        $('#title').val($(this).siblings('.anno-title').text());
+        $('#content').val($(this).siblings('.anno-content').text());
+        $('#date').val($(this).siblings('.anno-date').text());
+        modifyDone();
+    });
+    $(document).on('click', '.anno-delete',function(){
+      // console.log($(this).parent().data('id'));
+      $.ajax({
+          type: 'DELETE',
+          url: 'http://ga-wdi-api.meteor.com/api/posts/'+$(this).parent().data('id'),
+          success: function(response){
+              console.log('deleted');
+          }
+      });
+      // location.reload();
+    });
+    // grabAnnot();
   }
   { //Chart settings
     function initializeHighChart(){
@@ -137,7 +193,11 @@ $(document).ready(function(){
         series: [
           {
             name: 'Internet Users per 100 people',
-            data: data
+            data: data,
+            id: 'dataseries',
+            tooltip: {
+                valueDecimals: 4
+            }
           },
           {
             type: 'flags',
